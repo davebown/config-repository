@@ -5,9 +5,9 @@ namespace CloudNative.Configuration.Models
     {
         public virtual TKey Id { get; set; }
 
-        public virtual DateTimeOffset CreatedOn { get; set; } = DateTimeOffset.UtcNow;
+        public virtual DateTimeOffset CreatedOn { get; set; }
        
-        public virtual DateTimeOffset? ModifiedOn { get; set; } 
+        public virtual DateTimeOffset? ModifiedOn { get; set; }
 
         public virtual long Version { get; set; }
     }

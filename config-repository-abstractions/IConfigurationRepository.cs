@@ -28,7 +28,8 @@ namespace CloudNative.Configuration
 		/// Add/update a configuration reocrd in the repository
 		/// </summary>
 		/// <param name="configurationItem">The configuration record to add or update</param>
-        Task Set(TModel configurationItem);
+        /// <param name="force">Force a set even if configuraton item already exists with a different version</param>
+        Task Set(TModel configurationItem, bool force = false);
 
 		/// <summary>
 		/// Remove a configuration record from the repository by id

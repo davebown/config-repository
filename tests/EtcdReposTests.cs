@@ -92,5 +92,54 @@ namespace CloudNative.Tests
             Assert.IsNotNull(deleteit1, "ConfigItem should have been retreived and not be null.");
             Assert.IsNull(deleteit2, "ConfigItem should not have been retreived because it should have been deleted.");
         }
+
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task ConflictingVersion()
+        {
+            try
+            {
+                await _repos.WaitTillReady();
+                var configItem = new ConfigItem { Id = "conflict", Name = "Test" };
+                await _repos.Set(configItem);
+                Assert.IsTrue(configItem.Version > 0, "Version was not greater than 0 and should be");
+                await _repos.Set(new ConfigItem { Id = "conflict", Name = "Updated" });
+            }
+            finally
+            {
+                try
+                {
+                    await _repos.Remove("conflict");
+                }
+                catch (Exception) { }
+            }
+        }
+
+        [TestMethod]
+        public async Task NoneConflictingVersion()
+        {
+            try
+            {
+                await _repos.WaitTillReady();
+                var configItem = new ConfigItem { Id = "nonconflict", Name = "Test" };
+                await _repos.Set(configItem);
+                var createdVersion = configItem.Version;
+                Assert.IsTrue(configItem.Version > 0, "Version was not greater than 0 and should be");
+                configItem.Name = "Updated";
+                await _repos.Set(configItem);
+                var updatedVersion = configItem.Version;
+                Assert.IsTrue(createdVersion > 0, "Version was not greater than 0 and should be");
+                Assert.IsTrue(updatedVersion > createdVersion, "Updated Version was not greater than the Created Version and should be");
+            }
+            finally
+            {
+                try
+                {
+                    await _repos.Remove("nonconflict");
+                }
+                catch (Exception) { }
+            }
+        }
     }
 }

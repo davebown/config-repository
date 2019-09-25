@@ -108,16 +108,84 @@ namespace CloudNative.Configuration.Etcd
         /// Add/update a configuration reocrd in the repository
         /// </summary>
         /// <param name="configurationItem">The configuration record to add or update</param>
-        public virtual async Task Set(TModel configurationItem)
+        /// <param name="force">Force a set (overwrite) even if configuraton item already exists with a different version</param>
+        public virtual async Task Set(TModel configurationItem, bool force = false)
         {
-            //Set modified timestamp
-            configurationItem.ModifiedOn = DateTimeOffset.UtcNow;
+            //Set created timestamp for version 0
+            if (configurationItem.Version == 0 || force)
+            {
+                configurationItem.CreatedOn = DateTimeOffset.UtcNow;
+            }
+            //Otherwise set modified timestamp
+            else
+            {
+                configurationItem.ModifiedOn = DateTimeOffset.UtcNow;
+            }
+        
+            //Create the etcd key for the configuration item
+            var etcdKey = CreateKey(configurationItem);
+
+            //Serialise configuration item as JSON to persist to etcd
+            var json = JsonConvert.SerializeObject(configurationItem, _jsonSerializerSettings);
+
             //Ensure the repository is initialised before retreiving item
             await _readyTask.ConfigureAwait(false);
-            //Put the key/value into etcd
-            var setReponse = await _etcdClient.PutAsync(CreateKey(configurationItem), JsonConvert.SerializeObject(configurationItem, _jsonSerializerSettings)).ConfigureAwait(false);
-            //Update the configuration item version
-            configurationItem.Version = setReponse.Header.Revision;
+
+            //If we force an update then we just put the value without a check
+            if(force)
+            {
+                //Put the key/value into etcd
+                var setReponse = await _etcdClient.PutAsync(etcdKey, json).ConfigureAwait(false);
+                //Update the configuration item version
+                configurationItem.Version = setReponse.Header.Revision;
+            }
+            //If we do not force update we need to do a CAS (check and set) which will eliminate concurrency issues and accidental overwrites
+            else
+            {
+                //Create a transaction that checks the ModRevision is the same as the configuration item before performing the put operation
+                var transReq = new TxnRequest();
+                if (configurationItem.Version == 0)
+                {
+                    transReq.Compare.Add(new Compare
+                    {
+                        Key = Google.Protobuf.ByteString.CopyFromUtf8(etcdKey),
+                        Result = Compare.Types.CompareResult.Equal,
+                        CreateRevision = configurationItem.Version,
+                        Target = Compare.Types.CompareTarget.Create
+                    });
+                }
+                else
+                {
+                    transReq.Compare.Add(new Compare
+                    {
+                        Key = Google.Protobuf.ByteString.CopyFromUtf8(etcdKey),
+                        Result = Compare.Types.CompareResult.Equal,
+                        ModRevision = configurationItem.Version,
+                        Target = Compare.Types.CompareTarget.Mod
+                    });
+                }
+                transReq.Success.Add(new RequestOp
+                {
+                    RequestPut = new PutRequest
+                    {
+                        Key = Google.Protobuf.ByteString.CopyFromUtf8(etcdKey),
+                        Value = Google.Protobuf.ByteString.CopyFromUtf8(json)
+                    }
+                });
+                //Execute transaction
+                var transResponse = await _etcdClient.TransactionAsync(transReq);
+
+                //Check the transaction succeeded
+                if (transResponse.Succeeded)
+                {
+                    //Update the configuration item version
+                    configurationItem.Version = transResponse.Responses[0].ResponsePut.Header.Revision;
+                }
+                else
+                {
+                    throw new ArgumentException("Unable to set configuration item, either the specified item does not exist or the version specified was incorrect.");
+                }
+            }
         }
 
         /// <summary>
