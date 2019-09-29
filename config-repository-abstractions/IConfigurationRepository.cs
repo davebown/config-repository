@@ -22,20 +22,42 @@ namespace CloudNative.Configuration
 		/// Get a configuration record from the respository by id
 		/// </summary>
 		/// <param name="id">Id of the configuration record</param>
+        /// <remarks>For configuration records without an assigned namespace</remarks>
         Task<TModel> Get(TKey id);
 
         /// <summary>
-		/// Add/update a configuration reocrd in the repository
-		/// </summary>
-		/// <param name="configurationItem">The configuration record to add or update</param>
+        /// Get a configuration record from the respository by namespace and id
+        /// </summary>
+        /// <param name="id">Id of the configuration record</param>
+        /// <param name="nameSpace">Namespace of the configuration record</param>
+        Task<TModel> Get(string nameSpace, TKey id);
+
+        /// <summary>
+        /// Add/update a configuration reocrd in the repository
+        /// </summary>
+        /// <param name="configurationItem">The configuration record to add or update</param>
         /// <param name="force">Force a set even if configuraton item already exists with a different version</param>
         Task Set(TModel configurationItem, bool force = false);
 
-		/// <summary>
-		/// Remove a configuration record from the repository by id
-		/// </summary>
-		/// <param name="id">Id of the configuration record</param>
-		Task Remove(TKey id);
+        /// <summary>
+        /// Remove a configuration record from the repository by id
+        /// </summary>
+        /// <param name="configurationItem">The configuration record to remove</param>
+        Task Remove(TModel configurationItem);
+
+        /// <summary>
+        /// Remove a configuration record from the repository by id
+        /// </summary>
+        /// <param name="id">Id of the configuration record</param>
+        /// <remarks>For configuration records without an assigned namespace</remarks>
+        Task Remove(TKey id);
+
+        /// <summary>
+        /// Remove a configuration record from the repository by namespace and id
+        /// </summary>
+        /// <param name="nameSpace">Namespace of configuration record</param>
+        /// <param name="id">Id of the configuration record</param>
+        Task Remove(string nameSpace, TKey id);
 
         /// <summary>
 		/// Event handler that is called whenever a configuration record is added, updated or deleted.

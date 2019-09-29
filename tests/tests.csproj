@@ -23,4 +23,7 @@
   <ItemGroup>
     <None Remove="appsettings.json" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="TestSerializationBinder.cs" />
+  </ItemGroup>
 </Project>

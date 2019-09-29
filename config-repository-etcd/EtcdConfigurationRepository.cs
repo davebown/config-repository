@@ -27,7 +27,6 @@ namespace CloudNative.Configuration.Etcd
         readonly Task _readyTask;
         //Serializer settings to serialize json objects to etcd key/vaule store
         readonly JsonSerializerSettings _jsonSerializerSettings;
-
         //Set of keys that have failed to load
         readonly ConcurrentHashSet<string> _failedKeys = new ConcurrentHashSet<string>();
 
@@ -46,12 +45,14 @@ namespace CloudNative.Configuration.Etcd
             //Initialise serializer settings
             _jsonSerializerSettings = new JsonSerializerSettings
             {
+                TypeNameHandling = TypeNameHandling.Auto,
                 ContractResolver = new DefaultContractResolver
                 {
                     NamingStrategy = new CamelCaseNamingStrategy()
                 },
                 NullValueHandling = NullValueHandling.Ignore,
-                Formatting = Formatting.None
+                Formatting = Formatting.None,
+                SerializationBinder = new DefaultSerializationBinder()
             };
 
             //Create an initialisation task to create etcd client and initialise the watcher
@@ -82,7 +83,7 @@ namespace CloudNative.Configuration.Etcd
         /// Get a configuration record from the respository by id
         /// </summary>
         /// <param name="id">Id of the configuration record</param>
-        /// <remarks>For configuration items without an assigned namespace</remarks>
+        /// <remarks>For configuration records without an assigned namespace</remarks>
         public virtual Task<TModel> Get(TKey id)
         {
             return Get(null, id);
@@ -146,7 +147,7 @@ namespace CloudNative.Configuration.Etcd
             var etcdKey = CreateEtcdKey(configurationItem);
 
             //Serialise configuration item as JSON to persist to etcd
-            var json = JsonConvert.SerializeObject(configurationItem, _jsonSerializerSettings);
+            var json = JsonConvert.SerializeObject(configurationItem, typeof(TModel), _jsonSerializerSettings);
 
             //Ensure the repository is initialised before retreiving item
             await _readyTask.ConfigureAwait(false);
@@ -225,6 +226,7 @@ namespace CloudNative.Configuration.Etcd
         /// Remove a configuration record from the repository by id
         /// </summary>
         /// <param name="id">Id of the configuration record</param>
+        /// <remarks>For configuration records without an assigned namespace</remarks>
         public virtual Task Remove(TKey id)
         {
             return Remove(null, id);
@@ -338,10 +340,15 @@ namespace CloudNative.Configuration.Etcd
         protected virtual string BaseKey => $"/{this._scope.ToString().ToLower()}/{typeof(TModel).Name.ToLower()}";
 
         /// <summary>
+        /// Expose JSON serializer settings to derived types
+        /// </summary>
+        protected JsonSerializerSettings JsonSerializerSettings => _jsonSerializerSettings;
+
+        /// <summary>
         /// Enumerable of the ids of any configuration records that have failed to load
         /// </summary>
         public IEnumerable<TKey> FailedToLoad => _failedKeys.Select(key => ConvertEtcdKeyToId(key));
-
+       
         /// <summary>
         /// Create etcd key for a specified configuration item
         /// </summary>

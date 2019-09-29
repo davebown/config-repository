@@ -1,14 +1,14 @@
-﻿using System;
-using CloudNative.Configuration.Models;
-using Newtonsoft.Json;
+﻿using CloudNative.Configuration.Models;
 
 namespace CloudNative.Tests
 {
     public class ConfigItem : ConfigurationItemBase<string>
     {
         public string Name { get; set; }
+    }
 
-        [JsonIgnore]
-        public override long Version { get => base.Version; set => base.Version = value; }
+    public class ChildConfigItem : ConfigItem
+    {
+        public string Description { get; set; }
     }
 }
