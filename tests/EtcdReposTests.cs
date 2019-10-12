@@ -53,9 +53,9 @@ namespace CloudNative.Tests
         }
 
         [TestMethod]
-        public async Task SetAndGetConfigItemWithNamespace()
+        public async Task SetAndGetConfigItemWithFolderPath()
         {
-            var nameSpace = "folder";
+            var folderPath = "folder";
             var configItemId = "config_item";
             try
             {
@@ -70,17 +70,17 @@ namespace CloudNative.Tests
                     }
                 };
 
-                await _repos.Set(new ConfigItem { Id = configItemId, Namespace = nameSpace, Name = "Test" });
+                await _repos.Set(new ConfigItem { Id = configItemId, FolderPath = folderPath, Name = "Test" });
 
                 //Wait for OnChange event delegate be called or timeout after a second
                 await Task.WhenAny(onChangeEvent.Task, Task.Delay(10000));
 
-                var bob = await _repos.Get(nameSpace, configItemId);
+                var bob = await _repos.Get(folderPath, configItemId);
 
                 Assert.AreEqual(true, onChangeEvent.Task.IsCompletedSuccessfully && onChangeEvent.Task.Result, "A valid OnChange event has not fired!");
                 Assert.IsNotNull(bob, "Bob ConfigItem should have been retreived and not be null.");
                 Assert.AreEqual(configItemId, bob.Id, "Bob config item should have an id of 'config_item'");
-                Assert.AreEqual($"/{nameSpace}", bob.Namespace, "Bob config item should have a namespace of 'folder'");
+                Assert.AreEqual($"/{folderPath}", bob.FolderPath, "Bob config item should have a folder path of 'folder'");
                 Assert.AreEqual("Test", bob.Name, "Bob config item should have had a Name of 'Test'");
                 Assert.AreNotSame(0, bob.Version, "Version should not be 0");
             }
@@ -88,7 +88,7 @@ namespace CloudNative.Tests
             {
                 try
                 {
-                    await _repos.Remove(nameSpace, configItemId);
+                    await _repos.Remove(folderPath, configItemId);
                 }
                 catch (Exception) { }
             }
@@ -215,7 +215,7 @@ namespace CloudNative.Tests
                 };
 
                 await _repos.Set(new ConfigItem { Id = rootItemId, Name = "Root type" });
-                await _repos.Set(new ChildConfigItem { Id = derivedItemId, Name = "Derived type", Description = "A derived entity type"});
+                await _repos.Set(new ChildConfigItem { Id = derivedItemId, Name = "Derived type", Description = "A derived entity type" });
 
                 //Wait for OnChange event delegate be called or timeout after a second
                 await Task.WhenAny(Task.WhenAll(onChangeEvent1.Task, onChangeEvent2.Task), Task.Delay(10000));

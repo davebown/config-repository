@@ -22,15 +22,15 @@ namespace CloudNative.Configuration
 		/// Get a configuration record from the respository by id
 		/// </summary>
 		/// <param name="id">Id of the configuration record</param>
-        /// <remarks>For configuration records without an assigned namespace</remarks>
+        /// <remarks>For configuration records without an assigned folder</remarks>
         Task<TModel> Get(TKey id);
 
         /// <summary>
-        /// Get a configuration record from the respository by namespace and id
+        /// Get a configuration record from the respository by folder and id
         /// </summary>
+        /// <param name="folderPath">Folder of the configuration record</param>
         /// <param name="id">Id of the configuration record</param>
-        /// <param name="nameSpace">Namespace of the configuration record</param>
-        Task<TModel> Get(string nameSpace, TKey id);
+        Task<TModel> Get(string folderPath, TKey id);
 
         /// <summary>
         /// Add/update a configuration reocrd in the repository
@@ -49,15 +49,15 @@ namespace CloudNative.Configuration
         /// Remove a configuration record from the repository by id
         /// </summary>
         /// <param name="id">Id of the configuration record</param>
-        /// <remarks>For configuration records without an assigned namespace</remarks>
+        /// <remarks>For configuration records without an assigned folder</remarks>
         Task Remove(TKey id);
 
         /// <summary>
-        /// Remove a configuration record from the repository by namespace and id
+        /// Remove a configuration record from the repository by folder and id
         /// </summary>
-        /// <param name="nameSpace">Namespace of configuration record</param>
+        /// <param name="folderPath">Folder of configuration record</param>
         /// <param name="id">Id of the configuration record</param>
-        Task Remove(string nameSpace, TKey id);
+        Task Remove(string folderPath, TKey id);
 
         /// <summary>
 		/// Event handler that is called whenever a configuration record is added, updated or deleted.

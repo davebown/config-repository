@@ -6,10 +6,10 @@ namespace CloudNative.Configuration.Models
     public abstract class ConfigurationItemBase<TKey>
     {
         /// <summary>
-        /// Namespace (e.g. key prefix) of the configuration item.
+        /// Folder path (e.g. key prefix) of the configuration item.
         /// </summary>
         [JsonIgnore]
-        public virtual string Namespace { get; set; }
+        public virtual string FolderPath { get; set; }
 
         /// <summary>
         /// Id of the configuration item.

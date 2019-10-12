@@ -83,18 +83,18 @@ namespace CloudNative.Configuration.Etcd
         /// Get a configuration record from the respository by id
         /// </summary>
         /// <param name="id">Id of the configuration record</param>
-        /// <remarks>For configuration records without an assigned namespace</remarks>
+        /// <remarks>For configuration records without an assigned folder</remarks>
         public virtual Task<TModel> Get(TKey id)
         {
             return Get(null, id);
         }
 
         /// <summary>
-        /// Get a configuration record from the respository by namespace and id
+        /// Get a configuration record from the respository by folder and id
         /// </summary>
+        /// <param name="folderPath">Folder of the configuration record</param>
         /// <param name="id">Id of the configuration record</param>
-        /// <param name="nameSpace">Namespace of the configuration record</param>
-        public virtual async Task<TModel> Get(string nameSpace, TKey id)
+        public virtual async Task<TModel> Get(string folderPath, TKey id)
         {
             if (id.Equals(default(TKey)))
             {
@@ -102,7 +102,7 @@ namespace CloudNative.Configuration.Etcd
             }
             //Ensure the repository is initialised before retreiving item
             await _readyTask.ConfigureAwait(false);
-            if (ConfigurationItems.TryGetValue(CreateEtcdKey(nameSpace, id), out TModel configurationItem))
+            if (ConfigurationItems.TryGetValue(CreateEtcdKey(folderPath, id), out TModel configurationItem))
             {
                 return configurationItem;
             }
@@ -142,7 +142,7 @@ namespace CloudNative.Configuration.Etcd
             {
                 configurationItem.ModifiedOn = DateTimeOffset.UtcNow;
             }
-        
+
             //Create the etcd key for the configuration item
             var etcdKey = CreateEtcdKey(configurationItem);
 
@@ -153,7 +153,7 @@ namespace CloudNative.Configuration.Etcd
             await _readyTask.ConfigureAwait(false);
 
             //If we force an update then we just put the value without a check
-            if(force)
+            if (force)
             {
                 //Put the key/value into etcd
                 var setReponse = await _etcdClient.PutAsync(etcdKey, json).ConfigureAwait(false);
@@ -215,29 +215,29 @@ namespace CloudNative.Configuration.Etcd
         /// <param name="configurationItem">The configuration record to remove</param>
         public virtual Task Remove(TModel configurationItem)
         {
-            if(configurationItem == null)
+            if (configurationItem == null)
             {
                 throw new ArgumentNullException(nameof(configurationItem));
             }
-            return Remove(configurationItem.Namespace, configurationItem.Id);
+            return Remove(configurationItem.FolderPath, configurationItem.Id);
         }
 
         /// <summary>
         /// Remove a configuration record from the repository by id
         /// </summary>
         /// <param name="id">Id of the configuration record</param>
-        /// <remarks>For configuration records without an assigned namespace</remarks>
+        /// <remarks>For configuration records without an assigned folder</remarks>
         public virtual Task Remove(TKey id)
         {
             return Remove(null, id);
         }
 
         /// <summary>
-        /// Remove a configuration record from the repository by namespace and id
+        /// Remove a configuration record from the repository by folder and id
         /// </summary>
-        /// <param name="nameSpace">Namespace of configuration record</param>
+        /// <param name="folderPath">Folder of configuration record</param>
         /// <param name="id">Id of the configuration record</param>
-        public virtual async Task Remove(string nameSpace, TKey id)
+        public virtual async Task Remove(string folderPath, TKey id)
         {
             if (id.Equals(default(TKey)))
             {
@@ -246,7 +246,7 @@ namespace CloudNative.Configuration.Etcd
             //Ensure the repository is initialised before retreiving item
             await _readyTask.ConfigureAwait(false);
             //Delete the item from the repository
-            await _etcdClient.DeleteAsync(CreateEtcdKey(nameSpace, id)).ConfigureAwait(false);
+            await _etcdClient.DeleteAsync(CreateEtcdKey(folderPath, id)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -348,7 +348,7 @@ namespace CloudNative.Configuration.Etcd
         /// Enumerable of the ids of any configuration records that have failed to load
         /// </summary>
         public IEnumerable<TKey> FailedToLoad => _failedKeys.Select(key => ConvertEtcdKeyToId(key));
-       
+
         /// <summary>
         /// Create etcd key for a specified configuration item
         /// </summary>
@@ -356,22 +356,22 @@ namespace CloudNative.Configuration.Etcd
         /// <returns>EtcdKey</returns>
         protected string CreateEtcdKey(TModel configurationItem)
         {
-            return CreateEtcdKey(configurationItem.Namespace, configurationItem.Id);
+            return CreateEtcdKey(configurationItem.FolderPath, configurationItem.Id);
         }
 
         /// <summary>
         /// Create etcd key for a specified configuration item id
         /// </summary>
-        /// <param name="nameSpace">Namespace of configuration item</param>
+        /// <param name="folderPath">Folder of configuration item</param>
         /// <param name="id">Id of a configuration item</param>
         /// <returns>EtcdKey</returns>
-        protected string CreateEtcdKey(string nameSpace, TKey id)
+        protected string CreateEtcdKey(string folderPath, TKey id)
         {
-            if(string.IsNullOrEmpty(nameSpace))
+            if (string.IsNullOrEmpty(folderPath))
             {
                 return $"{BaseKey}/{id}";
             }
-            return $"{BaseKey}{(nameSpace.StartsWith("/", StringComparison.InvariantCulture) ? nameSpace : $"/{nameSpace}")}/{id}";
+            return $"{BaseKey}{(folderPath.StartsWith("/", StringComparison.InvariantCulture) ? folderPath : $"/{folderPath}")}/{id}";
         }
 
         /// <summary>
@@ -392,27 +392,27 @@ namespace CloudNative.Configuration.Etcd
         }
 
         /// <summary>
-        /// Extract namespace from etcd key
+        /// Extract folder path from etcd key
         /// </summary>
         /// <param name="etcdKey">The key of the etcd key/value</param>
-        /// <returns>Extracted namespace string</returns>
-        protected string ConvertEtcdKeyToNamespace(string etcdKey)
+        /// <returns>Extracted folder string</returns>
+        protected string ConvertEtcdKeyToFolderPath(string etcdKey)
         {
             var keyParts = etcdKey.Split('/');
 
-            if(keyParts.Length <= 3)
+            if (keyParts.Length <= 3)
             {
                 return null;
             }
 
-            var nameSpace = "";
+            var folderPath = "";
 
-            for(var i = 3; i < keyParts.Length - 1; i++)
+            for (var i = 3; i < keyParts.Length - 1; i++)
             {
-                nameSpace += $"/{keyParts[i]}";
+                folderPath += $"/{keyParts[i]}";
             }
 
-            return nameSpace;
+            return folderPath;
         }
 
         /// <summary>
@@ -450,8 +450,8 @@ namespace CloudNative.Configuration.Etcd
                         var configurationItem = JsonConvert.DeserializeObject<TModel>(entry.Value.ToStringUtf8(), _jsonSerializerSettings);
                         //Get config item id from key of etcd item
                         configurationItem.Id = ConvertEtcdKeyToId(etcdKey);
-                        //Get config item namespace (key prefix)
-                        configurationItem.Namespace = ConvertEtcdKeyToNamespace(etcdKey);
+                        //Get config item folder path (key prefix)
+                        configurationItem.FolderPath = ConvertEtcdKeyToFolderPath(etcdKey);
                         //Assign version to Modification revision
                         configurationItem.Version = entry.ModRevision;
                         //Add configuration item to local cache
@@ -521,8 +521,8 @@ namespace CloudNative.Configuration.Etcd
                         var configurationItem = JsonConvert.DeserializeObject<TModel>(watchEvent.Kv.Value.ToStringUtf8(), _jsonSerializerSettings);
                         //Assign id to configuration item
                         configurationItem.Id = ConvertEtcdKeyToId(etcdKey);
-                        //Get config item namespace (key prefix)
-                        configurationItem.Namespace = ConvertEtcdKeyToNamespace(etcdKey);
+                        //Get config item folder path (key prefix)
+                        configurationItem.FolderPath = ConvertEtcdKeyToFolderPath(etcdKey);
                         //Assign version to Modification revision
                         configurationItem.Version = watchEvent.Kv.ModRevision;
                         //Add to updated items list for OnChange event
