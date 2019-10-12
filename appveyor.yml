@@ -1,0 +1,16 @@
+version: 1.0.{build}
+build_cloud: Docker
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
+build:
+  project: config-repository.sln
+  publish_nuget: true
+  verbosity: minimal
+test: off
+...

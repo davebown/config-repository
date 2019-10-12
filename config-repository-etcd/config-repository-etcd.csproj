@@ -3,11 +3,11 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>CloudNative.Configuration.Etcd</RootNamespace>
-    <Version>1.0</Version>
+    <PackageId>cloudnative.configuration.etcd</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Dave Bown</Authors>
+    <Company>Cloud Natives</Company>
   </PropertyGroup>
-
-  <ItemGroup>
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="dotnet-etcd" Version="2.3.1" />
