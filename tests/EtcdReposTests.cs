@@ -13,6 +13,46 @@ namespace CloudNative.Tests
         IConfigurationRepository<ConfigItem, string> _repos = Common.ServiceProvider.GetRequiredService<IConfigurationRepository<ConfigItem, string>>();
 
         [TestMethod]
+        public async Task GetAll()
+        {
+            var configItemId = "test";
+
+            try
+            {
+                var onChangeEvent = new TaskCompletionSource<bool>();
+
+                var results = await _repos.GetAll();
+
+                _repos.OnChange += (sender, e) =>
+                {
+                    if (e.Updated.Any(configItem => configItem.Id == configItemId))
+                    {
+                        onChangeEvent.TrySetResult(true);
+                    }
+                };
+
+                await _repos.Set(new ConfigItem { Id = configItemId, Name = "Test" });
+
+                //Wait for OnChange event delegate be called or timeout after a second
+                await Task.WhenAny(onChangeEvent.Task, Task.Delay(10000));
+
+                var results2 = await _repos.GetAll();
+
+                Assert.IsNotNull(results, "Results should not be null");
+                Assert.AreEqual(0, results.Count(), "Results should have 0 entries");
+                Assert.AreEqual(1, results2.Count(), "Results2 shoudl have 1 entries");
+            }
+            finally
+            {
+                try
+                {
+                    await _repos.Remove(configItemId);
+                }
+                catch (Exception) { }
+            }
+        }
+
+        [TestMethod]
         public async Task SetAndGetConfigItem()
         {
             var configItemId = "config_item";

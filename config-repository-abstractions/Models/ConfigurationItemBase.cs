@@ -14,13 +14,11 @@ namespace CloudNative.Configuration.Models
         /// <summary>
         /// Id of the configuration item.
         /// </summary>
-        [JsonIgnore]
         public virtual TKey Id { get; set; }
 
         /// <summary>
         /// Version number (modification number) of the configuration item.
         /// </summary>
-        [JsonIgnore]
         public long Version { get; set; }
 
         /// <summary>

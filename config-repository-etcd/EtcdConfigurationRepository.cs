@@ -46,13 +46,14 @@ namespace CloudNative.Configuration.Etcd
             _jsonSerializerSettings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
-                ContractResolver = new DefaultContractResolver
+                //Use custom serializer to ensure 'id' and 'version' properties don't get written to etcd
+                ContractResolver = new ShouldSerializeContractResolver
                 {
                     NamingStrategy = new CamelCaseNamingStrategy()
                 },
                 NullValueHandling = NullValueHandling.Ignore,
                 Formatting = Formatting.None,
-                SerializationBinder = new DefaultSerializationBinder()
+                SerializationBinder = new DefaultSerializationBinder(),
             };
 
             //Create an initialisation task to create etcd client and initialise the watcher
